@@ -19,6 +19,30 @@ func TestAdler32(t *testing.T) {
 	}
 }
 
+func TestAdler32Partial(t *testing.T) {
+	h := New()
+
+	for i := 32; i < 1024; i++ {
+		// generated random data
+		data := genRandomData(i)
+
+		want := adler32.Checksum(data)
+
+		h.Reset()
+		// split into a few parts
+		for j := 0; j < len(data); j += 64 {
+			end := j + 64
+			if end > len(data) {
+				end = len(data)
+			}
+			h.Write(data[j:end])
+		}
+		got := h.Sum32()
+
+		assert.Equal(t, want, got)
+	}
+}
+
 func genRandomData(sz int) []byte {
 	buf := make([]byte, sz)
 	_, err := rand.Read(buf)
@@ -29,8 +53,8 @@ func genRandomData(sz int) []byte {
 }
 
 func BenchmarkAdler32KB(b *testing.B) {
-	b.SetBytes(1024)
-	data := make([]byte, 1024)
+	const sz = 32
+	data := make([]byte, sz)
 	for i := range data {
 		data[i] = byte(i)
 	}
@@ -44,6 +68,8 @@ func BenchmarkAdler32KB(b *testing.B) {
 			h.Write(data)
 			h.Sum(in)
 		}
+
+		b.SetBytes(sz)
 	})
 
 	b.Run("simd", func(b *testing.B) {
@@ -55,5 +81,7 @@ func BenchmarkAdler32KB(b *testing.B) {
 			h.Write(data)
 			h.Sum(in)
 		}
+
+		b.SetBytes(sz)
 	})
 }

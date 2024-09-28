@@ -2,7 +2,10 @@ module github.com/mhr3/adler32-simd
 
 go 1.21.3
 
-require github.com/stretchr/testify v1.9.0
+require (
+	github.com/stretchr/testify v1.9.0
+	golang.org/x/sys v0.25.0
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

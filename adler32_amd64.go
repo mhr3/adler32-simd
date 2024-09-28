@@ -2,10 +2,15 @@ package adler32
 
 import (
 	"hash"
+	"hash/adler32"
+
+	"golang.org/x/sys/cpu"
 )
 
 // The size of an Adler-32 checksum in bytes.
 const Size = 4
+
+var hasSSE3 = cpu.X86.HasSSE3
 
 // digest represents the partial evaluation of a checksum.
 // The low 16 bits are s1, the high 16 bits are s2.
@@ -15,6 +20,9 @@ func (d *digest) Reset() { *d = 1 }
 
 // New returns a new hash.Hash32 computing the Adler-32 checksum.
 func New() hash.Hash32 {
+	if !hasSSE3 {
+		return adler32.New()
+	}
 	d := new(digest)
 	d.Reset()
 	return d
@@ -44,8 +52,9 @@ func (d *digest) Sum(in []byte) []byte {
 
 // Checksum returns the Adler-32 checksum of data.
 func Checksum(data []byte) uint32 {
-	if len(data) >= 64 {
-		return adler32_simd(1, data)
+	if !hasSSE3 || len(data) < 64 {
+		return update(1, data)
 	}
-	return update(1, data)
+
+	return adler32_simd(1, data)
 }

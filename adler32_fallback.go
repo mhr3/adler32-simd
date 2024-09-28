@@ -1,4 +1,4 @@
-//go:build !arm64
+//go:build !arm64 && !amd64
 
 package adler32
 
@@ -11,7 +11,7 @@ import (
 const Size = 4
 
 // New returns a new hash.Hash32 computing the Adler-32 checksum.
-func New() hash.Hash {
+func New() hash.Hash32 {
 	return adler32.New()
 }
 
