@@ -53,7 +53,7 @@ func genRandomData(sz int) []byte {
 }
 
 func BenchmarkAdler32KB(b *testing.B) {
-	const sz = 32
+	const sz = 1024
 	data := make([]byte, sz)
 	for i := range data {
 		data[i] = byte(i)
