@@ -11,8 +11,8 @@
 /* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
 #define NMAX 5552
 
-// gocc: adler32_simd(in uint32, buf []byte) uint32
-uint32_t adler32_simd(
+// gocc: adler32_sse3(in uint32, buf []byte) uint32
+uint32_t adler32_sse3(
     uint32_t adler,
     const unsigned char *buf,
     size_t buf_len,

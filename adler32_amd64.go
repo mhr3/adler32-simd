@@ -10,7 +10,10 @@ import (
 // The size of an Adler-32 checksum in bytes.
 const Size = 4
 
-var hasSSE3 = cpu.X86.HasSSE3
+var (
+	hasSSE3 = cpu.X86.HasSSE3
+	hasAVX2 = cpu.X86.HasAVX2
+)
 
 // digest represents the partial evaluation of a checksum.
 // The low 16 bits are s1, the high 16 bits are s2.
@@ -32,15 +35,20 @@ func (d *digest) Size() int { return Size }
 
 func (d *digest) BlockSize() int { return 4 }
 
-func (d *digest) Write(p []byte) (nn int, err error) {
-	if len(p) >= 64 {
-		h := adler32_simd(uint32(*d), p)
+func (d *digest) Write(data []byte) (nn int, err error) {
+	if len(data) >= 64 {
+		var h uint32
+		if hasAVX2 {
+			h = adler32_avx2(uint32(*d), data)
+		} else {
+			h = adler32_sse3(uint32(*d), data)
+		}
 		*d = digest(h)
 	} else {
-		h := update(uint32(*d), p)
+		h := update(uint32(*d), data)
 		*d = digest(h)
 	}
-	return len(p), nil
+	return len(data), nil
 }
 
 func (d *digest) Sum32() uint32 { return uint32(*d) }
@@ -56,5 +64,8 @@ func Checksum(data []byte) uint32 {
 		return update(1, data)
 	}
 
-	return adler32_simd(1, data)
+	if hasAVX2 {
+		return adler32_avx2(1, data)
+	}
+	return adler32_sse3(1, data)
 }

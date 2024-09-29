@@ -9,7 +9,7 @@ import (
 )
 
 func TestAdler32(t *testing.T) {
-	for i := 0; i < 1024; i++ {
+	for i := 0; i < 4096; i++ {
 		// generated random data
 		data := genRandomData(i)
 		want := adler32.Checksum(data)
@@ -22,7 +22,7 @@ func TestAdler32(t *testing.T) {
 func TestAdler32Partial(t *testing.T) {
 	h := New()
 
-	for i := 32; i < 1024; i++ {
+	for i := 32; i < 4096; i++ {
 		// generated random data
 		data := genRandomData(i)
 

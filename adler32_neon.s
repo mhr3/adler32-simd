@@ -56,7 +56,7 @@ DATA LCPI0_7<>+0x04(SB)/2, $0x0002
 DATA LCPI0_7<>+0x06(SB)/2, $0x0001
 GLOBL LCPI0_7<>(SB), (RODATA|NOPTR), $8
 
-TEXT ·adler32_simd(SB), NOSPLIT, $0-36
+TEXT ·adler32_neon(SB), NOSPLIT, $0-36
 	MOVW adler+0(FP), R0
 	MOVD buf+8(FP), R1
 	MOVD buf_len+16(FP), R2

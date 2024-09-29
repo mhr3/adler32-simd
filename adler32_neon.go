@@ -5,4 +5,4 @@ package adler32
 
 
 //go:noescape
-func adler32_simd(in uint32, buf []byte) uint32
+func adler32_neon(in uint32, buf []byte) uint32

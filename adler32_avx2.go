@@ -5,4 +5,4 @@ package adler32
 
 
 //go:noescape
-func adler32_sse3(in uint32, buf []byte) uint32
+func adler32_avx2(in uint32, buf []byte) uint32

@@ -24,15 +24,15 @@ func (d *digest) Size() int { return Size }
 
 func (d *digest) BlockSize() int { return 4 }
 
-func (d *digest) Write(p []byte) (nn int, err error) {
-	if len(p) >= 64 {
-		h := adler32_simd(uint32(*d), p)
+func (d *digest) Write(data []byte) (nn int, err error) {
+	if len(data) >= 64 {
+		h := adler32_neon(uint32(*d), data)
 		*d = digest(h)
 	} else {
-		h := update(uint32(*d), p)
+		h := update(uint32(*d), data)
 		*d = digest(h)
 	}
-	return len(p), nil
+	return len(data), nil
 }
 
 func (d *digest) Sum32() uint32 { return uint32(*d) }
@@ -45,7 +45,7 @@ func (d *digest) Sum(in []byte) []byte {
 // Checksum returns the Adler-32 checksum of data.
 func Checksum(data []byte) uint32 {
 	if len(data) >= 64 {
-		return adler32_simd(1, data)
+		return adler32_neon(1, data)
 	}
 	return update(1, data)
 }
