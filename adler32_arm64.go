@@ -4,10 +4,16 @@ import (
 	"encoding/binary"
 	"errors"
 	"hash"
+
+	"golang.org/x/sys/cpu"
 )
 
 // The size of an Adler-32 checksum in bytes.
 const Size = 4
+
+var (
+	hasSVE2 = cpu.ARM64.HasSVE2
+)
 
 // digest represents the partial evaluation of a checksum.
 // The low 16 bits are s1, the high 16 bits are s2.
@@ -46,7 +52,12 @@ func (d *digest) BlockSize() int { return 4 }
 
 func (d *digest) Write(data []byte) (nn int, err error) {
 	if len(data) >= 64 {
-		h := adler32_neon(uint32(*d), data)
+		var h uint32
+		if hasSVE2 {
+			h = adler32_sve2(uint32(*d), data)
+		} else {
+			h = adler32_neon(uint32(*d), data)
+		}
 		*d = digest(h)
 	} else {
 		h := update(uint32(*d), data)
@@ -65,7 +76,11 @@ func (d *digest) Sum(in []byte) []byte {
 // Checksum returns the Adler-32 checksum of data.
 func Checksum(data []byte) uint32 {
 	if len(data) >= 64 {
-		return adler32_neon(1, data)
+		if hasSVE2 {
+			return adler32_sve2(1, data)
+		} else {
+			return adler32_neon(1, data)
+		}
 	}
 	return update(1, data)
 }
