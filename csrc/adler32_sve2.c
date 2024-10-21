@@ -41,7 +41,7 @@ uint32_t adler32_sve(uint32_t adler, const uint8_t *data, size_t len, size_t cap
     }
 
     uint32_t s1 = adler & 0xffff;
-    uint32_t s2 = (adler >> 16) & 0xffff;
+    uint32_t s2 = adler >> 16;
 
     size_t vec_len = svcntb();
     if (vec_len > 256) {
@@ -49,6 +49,7 @@ uint32_t adler32_sve(uint32_t adler, const uint8_t *data, size_t len, size_t cap
     }
 
     size_t index = 256 - vec_len;
+    svbool_t pg = svptrue_b8();
     svbool_t p1 = svptrue_b16();
 
     // Load weights
@@ -62,7 +63,6 @@ uint32_t adler32_sve(uint32_t adler, const uint8_t *data, size_t len, size_t cap
         for (int i = 0; i < 3; i++) {
             uint32_t s1_prev = s1;
 
-            svbool_t pg = svptrue_b16();
             svuint8_t vec_data = svld1_u8(pg, &data[offset]);
             offset += vec_len;
 
@@ -70,12 +70,12 @@ uint32_t adler32_sve(uint32_t adler, const uint8_t *data, size_t len, size_t cap
             uint64_t sum_d = svaddv_u8(pg, vec_data);
             s1 += sum_d;
 
-            svuint16_t z26 = svunpklo_u16(vec_data);
-            svuint16_t z27 = svunpkhi_u16(vec_data);
+            svuint16_t vec1 = svunpklo_u16(vec_data);
+            svuint16_t vec2 = svunpkhi_u16(vec_data);
 
             // Multiply with taps
-            svuint16_t prod1 = svmul_u16_z(p1, z26, taps1);
-            svuint16_t prod2 = svmul_u16_z(p1, z27, taps2);
+            svuint16_t prod1 = svmul_u16_m(p1, vec1, taps1);
+            svuint16_t prod2 = svmul_u16_m(p1, vec2, taps2);
 
             // Sum the products
             uint64_t sum_p1 = svaddv_u16(p1, prod1);
