@@ -2,15 +2,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/* Definitions from adler32.c: largest prime smaller than 65536 */
 #define BASE 65521U
+/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
 #define NMAX 5552
 
-#include <arm_sve.h>
-#include <stdint.h>
-#include <stddef.h>
-
-#define BASE 65521U
-#define NMAX 5552
+/* Minimum of a and b. */
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
 
 static const uint16_t weights[256] = {
     256,255,254,253,252,251,250,249,248,247,246,245,244,243,242,241,
@@ -56,11 +54,11 @@ uint32_t adler32_sve(uint32_t adler, const uint8_t *data, size_t len, size_t cap
     svuint16_t taps1 = svld1(p1, &weights[index]);
     svuint16_t taps2 = svld1(p1, &weights[index + (vec_len / sizeof(uint16_t))]);
 
-    size_t block_size = 3 * vec_len;
     size_t offset = 0;
 
-    while (len >= block_size) {
-        for (int i = 0; i < 3; i++) {
+    while (len >= vec_len) {
+        int iterations = MIN(len/vec_len, NMAX/vec_len);
+        for (int i = 0; i < iterations; i++) {
             uint32_t s1_prev = s1;
 
             svuint8_t vec_data = svld1_u8(pg, &data[offset]);
@@ -89,7 +87,7 @@ uint32_t adler32_sve(uint32_t adler, const uint8_t *data, size_t len, size_t cap
         s1 %= BASE;
         s2 %= BASE;
 
-        len -= block_size;
+        len -= iterations * vec_len;
     }
 
     while (len > 0) {
