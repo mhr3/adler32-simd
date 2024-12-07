@@ -1,6 +1,8 @@
 package adler32
 
 import (
+	"encoding/binary"
+	"errors"
 	"hash"
 )
 
@@ -18,6 +20,24 @@ func New() hash.Hash32 {
 	d := new(digest)
 	d.Reset()
 	return d
+}
+
+func (d *digest) MarshalBinary() ([]byte, error) {
+	b := make([]byte, 0, marshaledSize)
+	b = append(b, magic...)
+	b = binary.BigEndian.AppendUint32(b, uint32(*d))
+	return b, nil
+}
+
+func (d *digest) UnmarshalBinary(b []byte) error {
+	if len(b) < len(magic) || string(b[:len(magic)]) != magic {
+		return errors.New("hash/adler32: invalid hash state identifier")
+	}
+	if len(b) != marshaledSize {
+		return errors.New("hash/adler32: invalid hash state size")
+	}
+	*d = digest(binary.BigEndian.Uint32(b[len(magic):]))
+	return nil
 }
 
 func (d *digest) Size() int { return Size }

@@ -7,6 +7,10 @@ const (
 	// 255 * n * (n+1) / 2 + (n+1) * (mod-1) <= 2^32-1.
 	// It is mentioned in RFC 1950 (search for "5552").
 	nmax = 5552
+
+	// binary representation compatible with standard library.
+	magic         = "adl\x01"
+	marshaledSize = len(magic) + 4
 )
 
 // Add p to the running checksum d.

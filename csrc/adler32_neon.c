@@ -11,6 +11,13 @@
 /* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
 #define NMAX 5552
 
+static uint16_t mult_table[4][8] = {
+    { 32, 31, 30, 29, 28, 27, 26, 25 },
+    { 24, 23, 22, 21, 20, 19, 18, 17 },
+    { 16, 15, 14, 13, 12, 11, 10,  9 },
+    {  8,  7,  6,  5,  4,  3,  2,  1 }
+};
+
 // gocc: adler32_neon(in uint32, buf []byte) uint32
 uint32_t adler32_neon(
     uint32_t adler,
@@ -40,6 +47,9 @@ uint32_t adler32_neon(
     const unsigned BLOCK_SIZE = 1 << 5;
     size_t blocks = buf_len / BLOCK_SIZE;
     buf_len -= blocks * BLOCK_SIZE;
+
+    uint16x8x4_t mtab = vld1q_u16_x4(&mult_table[0][0]);
+
     while (blocks)
     {
         unsigned n = NMAX / BLOCK_SIZE;  /* The NMAX constraint. */
@@ -83,22 +93,14 @@ uint32_t adler32_neon(
         /*
          * Multiply-add bytes by [ 32, 31, 30, ... ] for s2.
          */
-        v_s2 = vmlal_u16(v_s2, vget_low_u16 (v_column_sum_1),
-            (uint16x4_t) { 32, 31, 30, 29 });
-        v_s2 = vmlal_u16(v_s2, vget_high_u16(v_column_sum_1),
-            (uint16x4_t) { 28, 27, 26, 25 });
-        v_s2 = vmlal_u16(v_s2, vget_low_u16 (v_column_sum_2),
-            (uint16x4_t) { 24, 23, 22, 21 });
-        v_s2 = vmlal_u16(v_s2, vget_high_u16(v_column_sum_2),
-            (uint16x4_t) { 20, 19, 18, 17 });
-        v_s2 = vmlal_u16(v_s2, vget_low_u16 (v_column_sum_3),
-            (uint16x4_t) { 16, 15, 14, 13 });
-        v_s2 = vmlal_u16(v_s2, vget_high_u16(v_column_sum_3),
-            (uint16x4_t) { 12, 11, 10,  9 });
-        v_s2 = vmlal_u16(v_s2, vget_low_u16 (v_column_sum_4),
-            (uint16x4_t) {  8,  7,  6,  5 });
-        v_s2 = vmlal_u16(v_s2, vget_high_u16(v_column_sum_4),
-            (uint16x4_t) {  4,  3,  2,  1 });
+        v_s2 = vmlal_u16(v_s2, vget_low_u16 (v_column_sum_1), vget_low_u8 (mtab.val[0]));
+        v_s2 = vmlal_u16(v_s2, vget_high_u16(v_column_sum_1), vget_high_u8(mtab.val[0]));
+        v_s2 = vmlal_u16(v_s2, vget_low_u16 (v_column_sum_2), vget_low_u8 (mtab.val[1]));
+        v_s2 = vmlal_u16(v_s2, vget_high_u16(v_column_sum_2), vget_high_u8(mtab.val[1]));
+        v_s2 = vmlal_u16(v_s2, vget_low_u16 (v_column_sum_3), vget_low_u8 (mtab.val[2]));
+        v_s2 = vmlal_u16(v_s2, vget_high_u16(v_column_sum_3), vget_high_u8(mtab.val[2]));
+        v_s2 = vmlal_u16(v_s2, vget_low_u16 (v_column_sum_4), vget_low_u8 (mtab.val[3]));
+        v_s2 = vmlal_u16(v_s2, vget_high_u16(v_column_sum_4), vget_high_u8(mtab.val[3]));
         /*
          * Sum epi32 ints v_s1(s2) and accumulate in s1(s2).
          */
